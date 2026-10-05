@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1019">
+  <meta name="description" content="《命途之哀》沉浸式分页阅读器">
+  <title>命途之哀 · 记忆回响</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1019'/%3E%3Cpath d='M32 7l5.7 18.3L56 31l-18.3 5.7L32 55l-5.7-18.3L8 31l18.3-5.7z' fill='%23d8b978'/%3E%3Ccircle cx='32' cy='31' r='6' fill='%230b1019'/%3E%3C/svg%3E">
+  <style>
+    :root{color-scheme:dark;--ink:#e9e5dc;--muted:#9da7b6;--gold:#d7b878;--paper:#111925;--edge:#2d394a;--page-width:48rem;--body-size:1.42rem}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{overflow:hidden;background:radial-gradient(circle at 50% -10%,#22334c 0,#101723 38%,#080c13 100%);color:var(--ink);font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong",serif}
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.42;background-image:radial-gradient(circle at 18% 24%,#d7b878 0 1px,transparent 1.5px),radial-gradient(circle at 73% 17%,#c7d8ef 0 1px,transparent 1.5px),radial-gradient(circle at 87% 69%,#d7b878 0 1px,transparent 1.5px);background-size:113px 149px,173px 197px,227px 251px}
+    .reader{height:100%;display:grid;grid-template-rows:auto 1fr auto;position:relative}
+    .topbar,.bottombar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:max(1rem,env(safe-area-inset-top)) clamp(1rem,4vw,3rem) 1rem;z-index:5}
+    .bottombar{padding:1rem clamp(1rem,4vw,3rem) max(1rem,env(safe-area-inset-bottom))}
+    .book-title{font-family:system-ui,sans-serif;font-size:.78rem;letter-spacing:.24em;color:var(--muted);white-space:nowrap}
+    .tools{display:flex;gap:.5rem}
+    button{border:1px solid var(--edge);background:#111a27cc;color:var(--ink);border-radius:999px;min-width:2.75rem;height:2.75rem;padding:0 .9rem;font:600 .9rem system-ui,sans-serif;cursor:pointer;transition:.2s ease}
+    button:hover,button:focus-visible{border-color:var(--gold);color:#fff;outline:none;box-shadow:0 0 0 3px #d7b87822}
+    button:disabled{opacity:.32;cursor:not-allowed}
+    .stage{position:relative;min-height:0;display:grid;place-items:center;padding:0 clamp(.75rem,3vw,2rem)}
+    .page{width:min(var(--page-width),100%);height:100%;max-height:calc(100vh - 9rem);overflow:auto;scrollbar-width:thin;scrollbar-color:#536176 transparent;background:linear-gradient(145deg,#172232e8,#0f1723f2);border:1px solid #50607855;border-radius:3px 18px 18px 3px;box-shadow:0 28px 70px #0009,inset 12px 0 30px #0004;padding:clamp(2rem,5vw,4.8rem) clamp(1.5rem,7vw,5.2rem);transition:opacity .18s ease,transform .18s ease}
+    .page.turning{opacity:0;transform:translateY(8px)}
+    .kicker{font:600 .75rem/1.4 system-ui,sans-serif;letter-spacing:.24em;color:var(--gold);margin:0 0 1.2rem}
+    h1{font-size:clamp(2rem,6vw,3.8rem);line-height:1.18;letter-spacing:.08em;margin:.2rem 0 1.8rem;font-weight:700}
+    h2{font-size:clamp(1.35rem,3vw,2rem);line-height:1.35;margin:.2rem 0 1.6rem;color:#f3e8cc}
+    p,li{font-size:var(--body-size);line-height:1.65;text-align:justify;letter-spacing:.045em}
+    p{margin:0 0 1.2em}
+    .lead::first-letter{float:left;font-size:4.25em;line-height:.84;padding:.12em .12em 0 0;color:var(--gold)}
+    blockquote{margin:1.5rem 0;padding:1rem 1.4rem;border-left:2px solid var(--gold);background:#070b1288;color:#f4ead6;font-size:calc(var(--body-size) * .98);line-height:1.65}
+    .rule{width:4rem;border:0;border-top:1px solid var(--gold);margin:2rem auto}
+    .data{display:grid;grid-template-columns:auto 1fr;gap:.65rem 1.2rem;font:500 1rem/1.55 system-ui,sans-serif;background:#080d15a8;border:1px solid var(--edge);padding:1.1rem 1.2rem;margin:1.5rem 0;border-radius:8px}
+    .data dt{color:var(--muted)}.data dd{margin:0}
+    ol{padding-left:1.5em}li{padding-left:.25em;margin:.55em 0}
+    .page-no,.hint{font:500 .78rem/1.3 system-ui,sans-serif;color:var(--muted)}
+    .hint{text-align:center;flex:1}.page-no{min-width:4rem;text-align:right}
+    .nav{display:flex;gap:.5rem}
+    body.landscape{--page-width:72rem}
+    body.landscape .page{padding-top:clamp(1.6rem,3vw,3rem);padding-bottom:clamp(1.6rem,3vw,3rem)}
+    .term{display:inline;padding:0;border:0;border-bottom:1px dotted var(--gold);border-radius:0;min-width:0;height:auto;background:none;color:inherit;font:inherit;cursor:help}
+    .term:hover,.term:focus-visible{color:#f5d99f;box-shadow:none}
+    dialog{width:min(28rem,calc(100% - 2rem));border:1px solid var(--edge);border-radius:12px;background:#101925;color:var(--ink);padding:1.5rem;box-shadow:0 24px 70px #000c}
+    dialog::backdrop{background:#02050acc;backdrop-filter:blur(3px)}
+    dialog h3{font-size:1.3rem;margin:0 0 .7rem;color:#f3e8cc}dialog p{font-size:1rem;line-height:1.65;margin:0 0 1.2rem;text-align:left}dialog form{text-align:right}
+    @media(max-width:600px){:root{--body-size:1.2rem}.page{max-height:calc(100vh - 8.3rem);padding:2rem 1.35rem;border-radius:2px 12px 12px 2px}.hint{display:none}.book-title{max-width:48vw;overflow:hidden;text-overflow:ellipsis}.topbar{padding-bottom:.6rem}.bottombar{padding-top:.6rem}p,li{line-height:1.6}}
+    @media(prefers-reduced-motion:reduce){.page,button{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="reader" aria-label="小说阅读器">
+    <header class="topbar">
+      <div class="book-title">崩坏·星穹铁道 · 命途之哀</div>
+      <div class="tools" aria-label="字号调整">
+        <button id="orientation" aria-label="切换为横版阅读">横版</button>
+        <button id="fullscreen" aria-label="进入全屏阅读">全屏</button>
+        <button id="smaller" aria-label="缩小字号">字−</button>
+        <button id="larger" aria-label="放大字号">字＋</button>
+      </div>
+    </header>
+    <section class="stage">
+      <article class="page" id="page" aria-live="polite"></article>
+    </section>
+    <footer class="bottombar">
+      <div class="nav">
+        <button id="prev" aria-label="上一页">上一页</button>
+        <button id="next" aria-label="下一页">下一页</button>
+      </div>
+      <div class="hint">按 ↑ / ↓ 或 PageUp / PageDown 翻页</div>
+      <div class="page-no" id="pageNo"></div>
+    </footer>
+  </main>
+  <dialog id="glossary"><h3 id="glossaryTitle"></h3><p id="glossaryText"></p><form method="dialog"><button>知道了</button></form></dialog>
+  <script>
+    const pages=[
+      `<p class="kicker">序章 · 星历8113年</p><h1>命途之哀</h1><p class="lead">林砚秋二十二岁那年，贝洛伯格的冬天仍旧漫长。</p><p>他出生在雅利洛－VI的下层区，父亲早逝，母亲林霜在三年前失踪。如今，他独自守着行政区边缘一间狭小的维修铺，靠修理供暖管线和老式机械维持生活。</p><p>他擅长机械维修、急救、计算机与攀爬，随身带着一把工业钉枪和一台磨损严重的民用终端。他没有加入任何组织，也从未真正踏上命途。</p><blockquote>他只有一个不曾对别人说出口的愿望：找到母亲，然后离开这颗冰封的星球，看一眼真正的星海。</blockquote>`,
+      `<p class="kicker">人物卷宗</p><h2>林砚秋</h2><dl class="data"><dt>年龄</dt><dd>22岁</dd><dt>身份</dt><dd>登记维修技师</dd><dt>命途状态</dt><dd>未觉醒 · 低度共鸣</dd><dt>性格</dt><dd>克制、好奇、念旧</dd><dt>资产</dt><dd>436信用点</dd><dt>装备</dt><dd>工业钉枪、热能切割器、民用终端</dd><dt>目标</dt><dd>查明母亲失踪的真相</dd></dl><p>所谓<button class="term" data-term="命途">命途</button>，是宇宙中由某种理念凝成的力量道路。当一个人的意志与其中一条道路产生共鸣，便可能获得超越常人的能力。林砚秋尚未跨过那道门槛。</p><p>世界并不知道他的名字。<button class="term" data-term="星穹列车">星穹列车</button>仍沿星轨远行，公司仍在计算利润，远方的星神也不会因为一个普通人的悲喜而停下目光。</p><p>但在这个清晨，有什么东西先一步记住了他。</p>`,
+      `<p class="kicker">第一章 · 无标识飞船</p><h2>没有太阳的清晨</h2><p class="lead">贝洛伯格的清晨没有太阳。</p><p>灰白云层低低压在城市上方，像一块久未擦拭的玻璃。供暖管道在墙体深处轰鸣，震得床架轻轻发颤。林砚秋蜷在维修铺二楼的窄床上，被楼下连续三声金属撞击惊醒。</p><p>他睁开眼，先看见天花板角落一条细长裂缝。寒意正从那里渗进来。</p><p>终端显示时间：06:43。</p><p>屏幕上躺着三条未读信息，冷白色的光映得他脸色有些苍白。</p>`,
+      `<p class="kicker">第一章 · 无标识飞船</p><h2>三条信息</h2><blockquote>市政能源署：旧城区第七码头供热节点异常。今日18时前完成检修，支付1,200信用点。</blockquote><blockquote>未知号码：林砚秋，你母亲没有死。今晚十一点，一个人来铆钉镇废弃孤儿院。不要通知银鬃铁卫。</blockquote><blockquote>旧友米莎尔：公司的小型运输舰临时招募维修员。上午十点，错过不候。</blockquote><p>他的手指停在第二条信息上，久久没有移动。</p><p>三年里，他已经学会不对每一条线索抱有希望。希望这种东西在贝洛伯格很昂贵，有时比信用点更容易把人逼入绝境。</p><p>可“你母亲没有死”几个字，仍像一枚生锈的钉子，缓慢地扎进心口。</p>`,
+      `<p class="kicker">第一章 · 无标识飞船</p><h2>天外来客</h2><p>窗外忽然传来低沉的轰鸣。杯中的水荡开细密波纹，窗框上的薄霜簌簌落下。</p><p>林砚秋推开窗。刺骨冷风迎面灌来，一艘没有公开识别标志的漆黑飞船正穿过贝洛伯格上空。它没有飞向正规空港，而是微微倾斜舰身，朝北方雪原掠去。</p><p>就在舰尾蓝白色光焰消失于云层时，他胸口猛地一痛。</p><p>那不像疾病，更像有什么冰冷的目光跨过漫长距离，轻轻落在了他身上。</p><p>疼痛转瞬即逝。楼下却响起急促的敲门声。</p><blockquote>“市政紧急检查！有人在吗？”</blockquote>`,
+      `<p class="kicker">第一章 · 无标识飞船</p><h2>向北</h2><p>林砚秋没有回复任何信息。</p><p>他穿上厚外套，把热能切割器、工业钉枪和维修箱塞进背包，从维修铺后门离开。那艘飞船早已不见踪影，唯有一道将散未散的蓝白尾迹悬在铅灰色天幕下。</p><p>北方没有民用空港。那里只有废弃矿区、失修的气象站，以及仍未清理干净的<button class="term" data-term="裂界">裂界</button>污染区——那是星核灾变后侵入现实的扭曲空间，会改变地貌，也会孕育危险造物。</p><p>理智告诉他，此刻最该做的是接下供热委托，凑齐六天后到期的房租。</p><p>可他还是朝旧城区的气象观测塔走去。</p><p>雪在靴底发出干涩的碎裂声。他忽然想起母亲失踪前的最后一个冬天，也曾这样沉默地看了很久北方。</p>`,
+      `<p class="kicker">第二章 · 观测塔</p><h2>被删除的航迹</h2><p class="lead">观测塔里弥漫着机油、灰尘与旧电线受热后的气味。</p><p>凭借维修许可证，林砚秋拆开值班系统的外壳，将终端接入雷达缓存。对方已经删除了大部分飞行数据，却遗漏了低空监测阵列中的一段残缺轨迹。</p><dl class="data"><dt>目标</dt><dd>小型穿梭舰</dd><dt>注册编号</dt><dd>不存在</dd><dt>降落区域</dt><dd>废弃地髓中继站</dd><dt>异常读数</dt><dd><button class="term" data-term="忆质">忆质</button>浓度上升</dd><dt>删除权限</dt><dd>市政七级授权</dd></dl><p>林砚秋在学校教材里见过“忆质”这个词：一种能够承载记忆、甚至构成特殊空间的物质。对贝洛伯格的普通人来说，它通常只会出现在外星新闻和危险品名录里。</p><p>能够动用七级权限的人屈指可数。更奇怪的是，飞船出现以前，中继站附近已经连续三天发生短暂的空间畸变。</p>`,
+      `<p class="kicker">第二章 · 观测塔</p><h2>它记住了你</h2><p>数据传输即将结束时，屏幕忽然暗了一瞬。</p><p>一行不属于气象系统的文字，从密密麻麻的参数间浮现出来：</p><blockquote>别去。它已经记住你了。</blockquote><p>只有一秒。</p><p>随后，整座观测塔陷入黑暗。风雪拍打外墙，像无数细小指节在同时叩门。</p><p>楼梯口传来鞋底踩过金属台阶的声音。很轻，很慢。来人似乎不急，因为她已经知道猎物无处可去。</p><p>林砚秋握住工业钉枪，侧身藏到设备柜后。冰冷枪柄贴着掌心，他这才发现自己的呼吸比想象中平稳。</p>`,
+      `<p class="kicker">第二章 · 观测塔</p><h2>门外的女人</h2><p>脚步停在门外。</p><blockquote>“林砚秋。放下终端。那艘船与你母亲无关。”</blockquote><p>陌生女人的声音隔着门板传来，冷静得像早已排练过。</p><p>她停了一会儿，又补上一句：</p><blockquote>“至少，三年前与你母亲无关。”</blockquote><p>林砚秋的手指缓慢扣紧钉枪。他知道打开门并不明智，却更清楚自己无法带着这句话转身离开。</p><p>门锁发出轻响。</p><p>他亲手打开了门。</p>`,
+      `<p class="kicker">第三章 · 洛芩</p><h2>旧照片</h2><p>寒气沿走廊涌入。门外站着一名约三十岁的女人，灰色长发束在脑后，深蓝防寒制服上没有任何徽记。她身形瘦削，脸部线条利落，双手空着，腰间却挂着一把保养得极好的制式手枪。</p><p>终端无法识别她的身份芯片。</p><p>“至少你还知道拿武器。”她扫了一眼钉枪，“但保险没有解除。”</p><p>林砚秋没有低头。女人嘴角轻微动了一下，像是认可，也像嘲弄。</p><p>“不错。”</p><p>她走进设备间，取出一张泛黄旧照片。照片上的林霜比记忆中年轻，身旁站着六个人。背景是一座银白色实验室，其中四张脸被人为刮去。</p>`,
+      `<p class="kicker">第三章 · 洛芩</p><h2>第七码头项目</h2><p>照片背面写着：北境联合勘探队，第七码头项目，星历8108年。</p><p>“我叫洛芩，曾经是市政档案局的调查员。”女人说，“你母亲不是普通的地质勘探员。她参与过一次对裂界残留物的秘密回收。”</p><p>“那艘船是什么？”</p><p>“如果我知道，就不会跟踪它三天。”</p><p>“你为什么知道我的名字？”</p><p>洛芩的视线在他脸上停留片刻。那双灰蓝色眼睛里没有怜悯，只有一种长期与秘密为伍的人才有的疲惫。</p><blockquote>“因为林霜失踪前，最后联系的人是我。”</blockquote>`,
+      `<p class="kicker">第三章 · 洛芩</p><h2>一个人的记忆</h2><p>洛芩把照片压在指下，没有立即交给他。</p><p>“今天的飞船使用了与第七码头项目相同的加密信标。它降落的中继站下面，还埋着当年没能运走的东西。”</p><p>“什么东西？”</p><p>“一个人的记忆。”她说，“或者说，一个仍然以为自己是人的东西。”</p><p>胸口的刺痛再次袭来。林砚秋来不及扶住桌沿，设备间便从视野里无声剥落。</p><p>他看见一片没有边界的黑色水面。母亲赤脚站在水中央，背对着他。她的衣角没有被风吹动，水面也没有倒影。</p>`,
+      `<p class="kicker">第三章 · 洛芩</p><h2>镜片之后</h2><p>在母亲更远的地方，一道巨大的女性轮廓正低垂着头。</p><p>她的面容被无数破碎镜片遮蔽。每一片镜面里都仿佛藏着一段不属于他的往事：陌生的雪原、熄灭的城市、正在倒退的钟，还有一列驶向黑暗的列车。</p><p>母亲回过头，嘴唇轻轻开合。</p><p>他听不见她在说什么。</p><p>下一秒，幻象破碎。林砚秋踉跄后退，肩膀撞上冰冷机柜。鼻腔里涌出温热鲜血。</p><p>洛芩的手第一次按上枪柄。</p><blockquote>“你刚才看见了什么？”</blockquote>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>如实相告</h2><p class="lead">林砚秋用手背擦去鼻血，把看见的一切说了出来。</p><p>黑色水面。赤脚站在远处的母亲。还有那道被破碎镜片遮住面容的巨大轮廓。</p><p>洛芩没有打断他。可随着描述继续，她握枪的手越来越紧，指节泛出苍白。</p><p>“她有几只手？”</p><p>“看不清。”</p><p>“镜片里有没有映出你的脸？”</p><p>他闭上眼，强迫自己重新触碰那段冰冷的视觉。</p><p>“没有。”</p><p>洛芩肩膀微不可察地放松了一点。</p>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>不能被说出的名字</h2><p>她从衣袋中取出一支银色注射器，抛到林砚秋脚边。针管撞上金属地板，发出清脆的一声。</p><blockquote>“忆质镇定剂。市面上买不到，只能暂时降低感官污染。是否使用，由你决定。”</blockquote><p>他没有立刻去捡。</p><p>“那是什么？”</p><p>“我不知道。”洛芩回答，“别把诚实误认为无知。有些东西不能被准确命名。一旦名字与认知完成对应，它就可能沿着记忆找到你。”</p><p>她终于松开照片，把它推到他面前。照片边缘在桌面划出一道很轻的声响。</p>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>来自未来的记忆</h2><p>“第七码头项目回收过一枚严重损坏的<button class="term" data-term="光锥">光锥</button>。”洛芩说，“那是一种用忆质封存事象的载体。可这枚光锥里装的不是某段过去，而是一段尚未发生的记忆。”</p><p>“未来的记忆？”</p><p>“项目报告里是这么写的。<button class="term" data-term="黑塔空间站">黑塔空间站</button>的人称它为伪忆。公司的人想带走它，你母亲拒绝了。”</p><p>窗外的风声骤然拔高。林砚秋垂眼看着照片中的母亲，记忆里那张温和的脸与眼前这个陌生研究员重叠，却无论如何也无法完全吻合。</p><p>“七天后，实验室发生事故。”洛芩继续道，“六名研究人员从所有公共档案中消失。”</p>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>从未出生</h2><p>“包括我母亲？”</p><p>“不。”</p><p>洛芩注视着他，像是在判断接下来的话会让一个人碎成什么样子。</p><blockquote>“所有记录里，林霜从来没有出生过。你的出生档案显示，生母一栏为空。”</blockquote><p>林砚秋一时没有回答。</p><p>他的终端里还存着母亲的照片、语音和旧信件；街坊邻居也记得她。她为他缝过冬衣，教过他辨认机械零件，也曾在停电的夜里握着他的手。</p><p>这些记忆如此真实。可他从未亲眼看过市政原始档案。</p><p>第一次，他产生了一个令自己恐惧的念头：如果档案没有错呢？</p>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>雪原之下</h2><p>洛芩打开终端，调出北部雪原地图。</p><p>无标识飞船停在中继站西侧。热成像显示，五个人已经离开飞船，其中至少两人携带重型武器，正在向地下实验区移动。</p><p>“我本来打算独自过去。”她说，“现在情况变了。那东西主动向你投射了记忆。”</p><p>“这意味着什么？”</p><p>“可能意味着你能打开地下实验区。”</p><p>她停顿了一下，目光落在那支镇定剂上。</p><blockquote>“也可能意味着，它需要一具新的身体。”</blockquote>`,
+      `<p class="kicker">第四章 · 记忆回响</p><h2>二十三</h2><p>远处传来城市巡逻钟声。观测塔的备用电力重新接通，雷达屏幕一块接一块亮起，幽蓝光线把两人的影子拉得狭长。</p><p>其中一块屏幕突然出现中继站附近的实时影像。</p><p>风雪深处站着一个女人。</p><p>画面模糊，距离相隔数十公里，可林砚秋仍在第一眼认出了她。那是林霜。她和失踪那天一模一样，岁月没有在她脸上留下任何痕迹。</p><p>她抬头望向监控镜头，仿佛隔着屏幕与儿子对视。随后，她蹲下身，在覆雪地面缓慢写出一个数字：</p><blockquote style="text-align:center;font-size:2.2rem;letter-spacing:.3em">23</blockquote><p>信号骤然中断。</p>`,
+      `<p class="kicker">当前状态</p><h2>命途正在靠近</h2><dl class="data"><dt>健康</dt><dd>轻微受损</dd><dt>精神</dt><dd>震荡</dd><dt>命途</dt><dd>未觉醒</dd><dt>异常共鸣</dt><dd>活跃</dd><dt>洛芩信任</dt><dd>24 / 100</dd><dt>洛芩警惕</dt><dd>61 / 100</dd><dt>当前时间</dt><dd>07:46</dd><dt>区域危险度</dt><dd>中</dd><dt>中继站危险度</dt><dd>高</dd></dl><p>洛芩有一辆改装雪地车。现在出发，约一小时二十分钟后可以抵达中继站。</p>`,
+      `<p class="kicker">你的选择</p><h2>下一步</h2><ol><li>注射镇定剂，与洛芩立刻前往中继站。</li><li>保留镇定剂，不进行注射，与洛芩出发。</li><li>先调查数字“23”的含义。</li><li>要求洛芩带你查阅自己的原始出生档案。</li><li>把资料交给银鬃铁卫，请求正式支援。</li><li>放弃调查，赶去参加公司运输舰的面试。</li><li>自由行动。</li></ol><hr class="rule"><p style="text-align:center;color:var(--gold)">回到对话中，告诉我你的选择。</p>`
+    ];
+    const glossary={
+      '命途':'由某种宇宙理念形成的力量道路。意志与其重合者可从中汲取力量，成为命途行者；这不等同于信仰某位星神。',
+      '星穹列车':'沿星轨穿行于不同世界的列车，也是“无名客”践行开拓理念的旅途据点。',
+      '裂界':'由星核灾变引发的空间侵蚀现象。它会扭曲环境、时间与生物，并产生被称为裂界造物的危险存在。',
+      '忆质':'与记忆密切相关的特殊物质，能够承载事象、构成忆泡或梦境空间；未经保护直接接触可能污染认知。',
+      '光锥':'以忆质封装某段事象的载体。它保存的不只是影像，也可能保留力量、情绪与命途痕迹。',
+      '黑塔空间站':'由天才学者黑塔拥有的大型科研空间站，收藏大量奇物并参与模拟宇宙等高风险研究。'
+    };
+    const glossaryDialog=document.getElementById('glossary'),glossaryTitle=document.getElementById('glossaryTitle'),glossaryText=document.getElementById('glossaryText');
+    const article=document.getElementById('page'),counter=document.getElementById('pageNo');
+    const prev=document.getElementById('prev'),next=document.getElementById('next');
+    let index=Math.min(Number(localStorage.getItem('mingtu-page'))||0,pages.length-1);
+    let size=Math.min(1.75,Math.max(1.05,Number(localStorage.getItem('mingtu-size'))||1.42));
+    function render(direction=0){article.classList.add('turning');setTimeout(()=>{article.innerHTML=pages[index];article.scrollTop=0;counter.textContent=`${index+1} / ${pages.length}`;prev.disabled=index===0;next.disabled=index===pages.length-1;article.classList.remove('turning');localStorage.setItem('mingtu-page',index)},direction?120:0)}
+    function go(delta){const target=Math.min(pages.length-1,Math.max(0,index+delta));if(target!==index){index=target;render(delta)}}
+    function setSize(delta){size=Math.min(1.75,Math.max(1.05,+(size+delta).toFixed(2)));document.documentElement.style.setProperty('--body-size',size+'rem');localStorage.setItem('mingtu-size',size)}
+    prev.onclick=()=>go(-1);next.onclick=()=>go(1);
+    article.addEventListener('click',e=>{const term=e.target.closest('[data-term]');if(!term)return;const name=term.dataset.term;glossaryTitle.textContent=name;glossaryText.textContent=glossary[name]||'';glossaryDialog.showModal()});
+    document.getElementById('smaller').onclick=()=>setSize(-.1);document.getElementById('larger').onclick=()=>setSize(.1);
+    const fullscreen=document.getElementById('fullscreen');
+    fullscreen.onclick=async()=>{try{if(document.fullscreenElement){await document.exitFullscreen()}else{await document.documentElement.requestFullscreen()}}catch{fullscreen.textContent='不可用';setTimeout(()=>fullscreen.textContent='全屏',1400)}};
+    document.addEventListener('fullscreenchange',()=>{const active=Boolean(document.fullscreenElement);fullscreen.textContent=active?'退出全屏':'全屏';fullscreen.setAttribute('aria-label',active?'退出全屏阅读':'进入全屏阅读')});
+    const orientation=document.getElementById('orientation');
+    let landscape=localStorage.getItem('mingtu-landscape')==='true';
+    function paintOrientation(){document.body.classList.toggle('landscape',landscape);orientation.textContent=landscape?'竖版':'横版';orientation.setAttribute('aria-label',landscape?'切换为竖版阅读':'切换为横版阅读')}
+    orientation.onclick=async()=>{landscape=!landscape;paintOrientation();localStorage.setItem('mingtu-landscape',landscape);if(landscape){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen()}catch{}try{if(screen.orientation?.lock)await screen.orientation.lock('landscape')}catch{}}else{try{screen.orientation?.unlock?.()}catch{}}};
+    document.addEventListener('keydown',e=>{if(['ArrowDown','PageDown','ArrowRight',' '].includes(e.key)){e.preventDefault();go(1)}else if(['ArrowUp','PageUp','ArrowLeft'].includes(e.key)){e.preventDefault();go(-1)}else if(e.key==='Home'){index=0;render(-1)}else if(e.key==='End'){index=pages.length-1;render(1)}});
+    let touchY=0;article.addEventListener('touchstart',e=>touchY=e.changedTouches[0].screenY,{passive:true});article.addEventListener('touchend',e=>{const d=touchY-e.changedTouches[0].screenY;if(Math.abs(d)>55)go(d>0?1:-1)},{passive:true});
+    document.documentElement.style.setProperty('--body-size',size+'rem');paintOrientation();render();
+  </script>
+</body>
+</html>
