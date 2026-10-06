@@ -29,7 +29,7 @@
     p,li{font-size:var(--body-size);line-height:1.65;text-align:justify;letter-spacing:.045em}
     p{margin:0 0 1.2em}
     .lead::first-letter{float:left;font-size:4.25em;line-height:.84;padding:.12em .12em 0 0;color:var(--gold)}
-    blockquote{margin:1.5rem 0;padding:1rem 1.4rem;border-left:2px solid var(--gold);background:#070b1288;color:#f4ead6;font-size:calc(var(--body-size) * .98);line-height:1.65}
+    blockquote{margin:1.25em 1.5em;padding:0;border:0;background:none;color:#f4ead6;font-size:calc(var(--body-size) * .98);line-height:1.65;text-indent:2em}
     .rule{width:4rem;border:0;border-top:1px solid var(--gold);margin:2rem auto}
     .data{display:grid;grid-template-columns:auto 1fr;gap:.65rem 1.2rem;font:500 1rem/1.55 system-ui,sans-serif;background:#080d15a8;border:1px solid var(--edge);padding:1.1rem 1.2rem;margin:1.5rem 0;border-radius:8px}
     .data dt{color:var(--muted)}.data dd{margin:0}
@@ -55,7 +55,7 @@
       .page{width:100%;min-width:0;max-height:none;height:100%;padding:1.2rem 1.05rem 1.35rem;border-radius:2px 10px 10px 2px;box-shadow:0 18px 42px #0008,inset 6px 0 18px #0003;overflow:hidden;overflow-wrap:anywhere;touch-action:manipulation;user-select:none}
       .page h1{font-size:2rem;margin-bottom:1.3rem}.page h2{font-size:1.45rem;margin-bottom:1.2rem}
       .page p,.page li{font-size:clamp(1rem,var(--body-size),1.35rem);line-height:1.55;letter-spacing:.025em;text-align:left}
-      .page blockquote{font-size:clamp(1rem,calc(var(--body-size) * .98),1.3rem);padding:.85rem 1rem;margin:1.1rem 0}
+      .page blockquote{font-size:clamp(1rem,calc(var(--body-size) * .98),1.3rem);padding:0;margin:1em .35em;text-indent:2em}
       .lead::first-letter{font-size:3.4em}
       .kicker{font-size:.72rem;letter-spacing:.16em;margin-bottom:1rem}
       .data{grid-template-columns:minmax(4.5rem,auto) minmax(0,1fr);font-size:.9rem;gap:.55rem .8rem;padding:.9rem}
@@ -78,15 +78,15 @@
       </div>
     </header>
     <section class="stage">
-      <article class="page" id="page" aria-live="polite"><p class="kicker">序章 · 星历8113年</p><h1>命途之哀</h1><p class="lead">林砚秋二十二岁那年，贝洛伯格的冬天仍旧漫长。</p><p>他出生在雅利洛－VI的下层区，父亲早逝，母亲林霜在三年前失踪。如今，他独自守着行政区边缘一间狭小的维修铺，靠修理供暖管线和老式机械维持生活。</p><p>他擅长机械维修、急救、计算机与攀爬，随身带着一把工业钉枪和一台磨损严重的民用终端。他没有加入任何组织，也从未真正踏上命途。</p><blockquote>他只有一个不曾对别人说出口的愿望：找到母亲，然后离开这颗冰封的星球，看一眼真正的星海。</blockquote></article>
+      <article class="page" id="page" aria-live="polite"><p class="kicker">第五章 · 二十三</p><h2>二十三份记录</h2><p>洛芩用废弃的档案局密钥打开隐藏目录。里面共有二十三个编号，前二十二项全部标记为“失败”，最后一项只有林霜留下的一句手写备注：</p><blockquote>M-23并非我们找到的样本。是它找到了我们。</blockquote><p>一号样本保存着陌生矿工的临终记忆；七号样本能让人在梦中的城市生活数年；十四号样本会使接触者确信自己遗忘了某位重要之人；十九号样本则能修改照片和文字，使其中出现原本不存在的人。</p><p>它们都是从损坏<button class="term" data-term="光锥">光锥</button>中剥离的忆质碎片。通常，忆质保存已经发生的事；可这枚光锥里混入了尚未发生的“未来记忆”。</p></article>
     </section>
     <footer class="bottombar">
       <div class="nav">
-        <button id="prev" aria-label="上一页" disabled="">上一页</button>
+        <button id="prev" aria-label="上一页">上一页</button>
         <button id="next" aria-label="下一页">下一页</button>
       </div>
       <div class="hint">按 ↑ / ↓ 或 PageUp / PageDown 翻页</div>
-      <div class="page-no" id="pageNo">1 / 31</div>
+      <div class="page-no" id="pageNo">21 / 31</div>
     </footer>
   </main>
   <dialog id="glossary"><h3 id="glossaryTitle"></h3><p id="glossaryText"></p><form method="dialog"><button>知道了</button></form></dialog>
@@ -145,21 +145,37 @@
       if(!mobileQuery.matches){viewPages=[...pages];return}
       const result=[];
       article.classList.add('paginating');
+      article.innerHTML='';
+      let currentChapter='';
+      const chapterOf=(text)=>{
+        const match=text.match(/(序章|第[一二三四五六七八九十]+章)/);
+        if(match)return match[1];
+        if(text.includes('人物卷宗'))return '序章';
+        if(text.includes('当前状态'))return '当前状态';
+        if(text.includes('你的选择'))return '你的选择';
+        return currentChapter||'正文';
+      };
+      const flush=()=>{if(article.children.length){result.push(article.innerHTML);article.innerHTML=''}};
       for(const html of pages){
         const template=document.createElement('template');template.innerHTML=html;
+        const kicker=template.content.querySelector('.kicker');
+        const chapter=chapterOf(kicker?.textContent||'');
+        if(chapter!==currentChapter){flush();currentChapter=chapter}
+        else kicker?.remove();
         const nodes=[...template.content.children];
-        article.innerHTML='';
         for(const node of nodes){
           article.append(node.cloneNode(true));
           if(article.scrollHeight>article.clientHeight+1&&article.children.length>1){
             article.lastElementChild.remove();
-            result.push(article.innerHTML);
-            article.innerHTML='';
+            const carry=[];
+            while(article.lastElementChild?.matches('.kicker,h1,h2'))carry.unshift(article.lastElementChild.remove());
+            flush();
+            for(const heading of carry)article.append(heading);
             article.append(node.cloneNode(true));
           }
         }
-        if(article.children.length)result.push(article.innerHTML);
       }
+      flush();
       viewPages=result.length?result:[...pages];
       article.classList.remove('paginating');
     }
