@@ -54,8 +54,10 @@
       .stage{width:100%;padding:0 .5rem;overflow:hidden}
       .page{width:100%;min-width:0;max-height:none;height:100%;padding:1.2rem 1.05rem 1.35rem;border-radius:2px 10px 10px 2px;box-shadow:0 18px 42px #0008,inset 6px 0 18px #0003;overflow:hidden;overflow-wrap:anywhere;touch-action:manipulation;user-select:none}
       .page h1{font-size:2rem;margin-bottom:1.3rem}.page h2{font-size:1.45rem;margin-bottom:1.2rem}
-      .page p,.page li{font-size:clamp(1rem,var(--body-size),1.35rem);line-height:1.55;letter-spacing:.025em;text-align:left}
-      .page blockquote{font-size:clamp(1rem,calc(var(--body-size) * .98),1.3rem);padding:0;margin:1em .35em;text-indent:2em}
+      .page p,.page li{font-size:clamp(1rem,var(--body-size),1.35rem);line-height:1.44;letter-spacing:.025em;text-align:left}
+      .page p{margin-bottom:.82em}
+      .page blockquote{font-size:clamp(1rem,calc(var(--body-size) * .98),1.3rem);line-height:1.44;padding:0;margin:.82em .35em;text-indent:2em}
+      .page .continued{margin-top:0;text-indent:2em}
       .lead::first-letter{font-size:3.4em}
       .kicker{font-size:.72rem;letter-spacing:.16em;margin-bottom:1rem}
       .data{grid-template-columns:minmax(4.5rem,auto) minmax(0,1fr);font-size:.9rem;gap:.55rem .8rem;padding:.9rem}
@@ -78,7 +80,7 @@
       </div>
     </header>
     <section class="stage">
-      <article class="page" id="page" aria-live="polite"><p class="kicker">第五章 · 二十三</p><h2>二十三份记录</h2><p>洛芩用废弃的档案局密钥打开隐藏目录。里面共有二十三个编号，前二十二项全部标记为“失败”，最后一项只有林霜留下的一句手写备注：</p><blockquote>M-23并非我们找到的样本。是它找到了我们。</blockquote><p>一号样本保存着陌生矿工的临终记忆；七号样本能让人在梦中的城市生活数年；十四号样本会使接触者确信自己遗忘了某位重要之人；十九号样本则能修改照片和文字，使其中出现原本不存在的人。</p><p>它们都是从损坏<button class="term" data-term="光锥">光锥</button>中剥离的忆质碎片。通常，忆质保存已经发生的事；可这枚光锥里混入了尚未发生的“未来记忆”。</p></article>
+      <article class="page" id="page" aria-live="polite">undefined<p>“第七码头项目回收过一枚严重损坏的<button class="term" data-term="光锥">光锥</button>。”洛芩说，“那是一种用忆质封存事象的载体。可这枚光锥里装的不是某段过去，而是一段尚未发生的记忆。”</p><p>“未来的记忆？”</p><p>“项目报告里是这么写的。<button class="term" data-term="黑塔空间站">黑塔空间站</button>的人称它为伪忆。公司的人想带走它，你母亲拒绝了。”</p><p>窗外的风声骤然拔高。林砚秋垂眼看着照片中的母亲，记忆里那张温和的脸与眼前这个陌生研究员重叠，却无论如何也无法完全吻合。</p><p>“七天后，实验室发生事故。”洛芩继续道，“六名研究人员从所有公共档案中消失。”</p><h2>从未出生</h2><p>“包括我母亲？”</p></article>
     </section>
     <footer class="bottombar">
       <div class="nav">
@@ -86,7 +88,7 @@
         <button id="next" aria-label="下一页">下一页</button>
       </div>
       <div class="hint">按 ↑ / ↓ 或 PageUp / PageDown 翻页</div>
-      <div class="page-no" id="pageNo">21 / 31</div>
+      <div class="page-no" id="pageNo">16 / 32</div>
     </footer>
   </main>
   <dialog id="glossary"><h3 id="glossaryTitle"></h3><p id="glossaryText"></p><form method="dialog"><button>知道了</button></form></dialog>
@@ -156,6 +158,30 @@
         return currentChapter||'正文';
       };
       const flush=()=>{if(article.children.length){result.push(article.innerHTML);article.innerHTML=''}};
+      const appendTextNode=(source)=>{
+        let remaining=source.textContent;
+        const make=(text)=>{const part=source.cloneNode(false);part.textContent=text;return part};
+        while(remaining){
+          const whole=make(remaining);article.append(whole);
+          if(article.scrollHeight<=article.clientHeight+1)return;
+          whole.remove();
+          if(!article.children.length){article.append(whole);flush();return}
+          let low=1,high=remaining.length-1,best=0;
+          while(low<=high){
+            const mid=(low+high)>>1;const probe=make(remaining.slice(0,mid));article.append(probe);
+            const fits=article.scrollHeight<=article.clientHeight+1;probe.remove();
+            if(fits){best=mid;low=mid+1}else high=mid-1
+          }
+          if(best<1){flush();continue}
+          const nearby=remaining.slice(0,best).search(/[。！？；：.!?;:]?[^。！？；：.!?;:]*$/);
+          const punct=[...remaining.slice(0,best).matchAll(/[。！？；：.!?;:]/g)].pop();
+          if(punct&&punct.index+1>best*.62)best=punct.index+1;
+          article.append(make(remaining.slice(0,best)));
+          remaining=remaining.slice(best).trimStart();
+          flush();
+          source.classList.add('continued');
+        }
+      };
       for(const html of pages){
         const template=document.createElement('template');template.innerHTML=html;
         const kicker=template.content.querySelector('.kicker');
@@ -164,6 +190,7 @@
         else kicker?.remove();
         const nodes=[...template.content.children];
         for(const node of nodes){
+          if(node.matches('p:not(.kicker)')&&!node.children.length){appendTextNode(node);continue}
           article.append(node.cloneNode(true));
           if(article.scrollHeight>article.clientHeight+1&&article.children.length>1){
             article.lastElementChild.remove();
